@@ -1,0 +1,25 @@
+diff -up pinentry.cygport pinentry.cygport.enable-pinentry-tty
+--- pinentry.cygport	2021-10-08 21:07:39.278922000 +0900
++++ pinentry.cygport.enable-pinentry-tty	2021-10-09 10:37:34.616967700 +0900
+@@ -41,13 +41,14 @@ pinentry_qt_OBSOLETES="${NAME}-qt3 ${NAM
+ pinentry_qt_CONTENTS="usr/bin/pinentry-qt.exe"
+ 
+ CYGCONF_ARGS="
+-	--disable-fallback-curses
+-	--disable-pinentry-curses
+-	--enable-pinentry-emacs
+-	--enable-pinentry-gtk2
+-	--enable-pinentry-gnome3
+-	--enable-pinentry-qt
+-	--disable-libsecret
++	--enable-pinentry-tty
++	--disable-fallback-curses
++	--disable-pinentry-curses
++	--disable-pinentry-emacs
++	--disable-pinentry-gtk2
++	--disable-pinentry-gnome3
++	--disable-pinentry-qt
++	--disable-libsecret
+ "
+ 
+ src_install() {

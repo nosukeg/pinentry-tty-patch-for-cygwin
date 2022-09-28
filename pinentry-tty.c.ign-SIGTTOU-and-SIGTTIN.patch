@@ -1,0 +1,22 @@
+diff -up pinentry-tty.c pinentry-tty.c.ign-SIGTTOU-and-SIGTTIN
+--- pinentry-tty.c	2016-11-07 18:55:43.000000000 +0900
++++ pinentry-tty.c.ign-SIGTTOU-and-SIGTTIN	2022-08-19 11:52:27.914827500 +0900
+@@ -564,6 +564,18 @@ pinentry_cmd_handler_t curses_cmd_handle
+ int
+ main (int argc, char *argv[])
+ {
++  struct sigaction sa;
++
++  sa.sa_handler = SIG_IGN;
++  /* #define SIG_DFL ((_sig_func_ptr)0)
++   * #define SIG_IGN ((_sig_func_ptr)1)
++   * /usr/include/signal.h */
++  sigemptyset( &sa.sa_mask );
++  sa.sa_flags = 0;
++
++  if ( sigaction( SIGTTOU, &sa, NULL ) != 0 ) return 1;
++  if ( sigaction( SIGTTIN, &sa, NULL ) != 0 ) return 1;
++
+   pinentry_init ("pinentry-tty");
+ 
+   /* Consumes all arguments.  */
