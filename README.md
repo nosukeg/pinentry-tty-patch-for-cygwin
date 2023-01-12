@@ -1,5 +1,6 @@
-<div style="text-align: right;">
-pinentry-tty patch for cygwin 2022-09-15
+<div align="right">
+pinentry-tty patch for cygwin 2022-09-15<br>
+added about pinentry-curse( pinentry-1.2.1 ) 2023-01-10
 </div>
 
 # Cygwin で pinentry-tty を使う
@@ -41,7 +42,7 @@ $ (trap '' SIGTTOU SIGTTIN; gpg-connect-agent /bye)
 - パッチを当てた場合は、gpg-agent 起動時に trap する必要はありません。
 
 ## Linux との比較
-Linux ではこのような事は不要です。`tty_cmd_handler() @ tty/pinentry-tty#499` に入った所で SIGTTOU、SIGTTIN それぞれの sa_handler の様子を確認すると、Linux は共に 0(SIG_DFL) となっており、パスフレーズを入力できますが、Cygwin はその状況（trap なしで起動の場合は共に 0(SIG_DFL) となる）では失敗します。Cygwin は trap することで sa_handler の値が共に 1(SIG_IGN) となり、その場合に、パスフレーズ入力ができるようになります。
+Linux ではこのような事は不要です。`tty_cmd_handler() @ tty/pinentry-tty.c#499` に入った所で SIGTTOU、SIGTTIN それぞれの sa_handler の様子を確認すると、Linux は共に 0(SIG_DFL) となっており、パスフレーズを入力できますが、Cygwin はその状況（trap なしで起動の場合は共に 0(SIG_DFL) となる）では失敗します。Cygwin は trap することで sa_handler の値が共に 1(SIG_IGN) となり、その場合に、パスフレーズ入力ができるようになります。
 
 私はこの違いが何に起因しているのか分かりません。この Linux と Cygwin の違いを理解されている方が、修正を提供して下さる事を期待しています。
 
@@ -69,3 +70,22 @@ $ cp ./pinentry-1.0.0-2.x86_64/build/tty/pinentry-tty.exe /usr/local/PinentryTty
 ~~~
 pinentry-program /usr/local/PinentryTty/pinentry-tty
 ~~~
+
+## pinentry-curse を使う
+pinentry 1.2.1<sup>(*1)</sup> を、[gnupg.org](https://www.gnupg.org/download/index.html#pinentry) から入手し、make します。
+~~~
+$ tar jxf pinentry-1.2.1.tar.bz2
+$ cd pinentry-1.2.1
+$ ./configure --enable-pinentry-curses --enable-pinentry-tty
+$ make
+~~~
+curses/pinentry-curses.exe をお好みの場所へ置き、~/.gnupg/gpg-agent.conf の pinentry-program に指定後、gpg-agent 起動時に SIGTTOU と SIGTTIN を無視して利用します<sup>（*2）</sup>。
+~~~
+$ (trap '' SIGTTOU SIGTTIN; gpg-connect-agent /bye)
+~~~
+
+SIGTTIN を無視すると動作する理由は分かりません。[fgetc の説明](https://pubs.opengroup.org/onlinepubs/9699919799/functions/fgetc.html) では、SIGTTIN を 無視する/しない に係わらず、エラーになると考えられる為です。Cygwin の実装上の理由だとすると、その実装が変わらない間はこの方法で利用できそうです。
+
+<sub>(*1) どのバージョンからかは分かりませんが、入手時 最新の 1.2.1 は日本語もきれいに納まってレイアウトされます！</sub>
+
+<sub>(*2) 敢えて、SIGTTOU と SIGTTIN を無視するパッチを作るならば、pinentry ではなく、gpg-agent を変更する方が pinentry-tty と pinentry-curse それぞれにパッチ当てずに済みますので良いかもしれません（GnuPG のソースパッケージ中の agent/gpg-agent.c 見ると、`main() @ agent/gpg-agent.c#1766` 辺りで SIGPIPE に対して SIG_IGN を設定していますので、そこで SIGTTOU と SIGTTIN を SIG_IGN に設定すると良さそうです。ここは gpg-agent に対する要求処理に入って行く手前のようです）。</sub>
