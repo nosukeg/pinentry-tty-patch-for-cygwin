@@ -1,6 +1,7 @@
 <div align="right">
 pinentry-tty patch for cygwin 2022-09-15<br>
-added about pinentry-curse( pinentry-1.2.1 ) 2023-01-10
+added about pinentry-curse( pinentry-1.2.1 ) 2023-01-10<br>
+added try using cygwin 3.5.0 2023-01-30
 </div>
 
 # Cygwin で pinentry-tty を使う
@@ -20,7 +21,7 @@ gpg: signing failed: 操作がキャンセルされました
 ~~~
 プログラムを追ってみると、まず `tcsetattr() @ tty/pinentry-tty.c#61` が失敗している事が分かります。この時の errno は 5(EIO) でした。
 
-[tcsetarrt の説明](https://pubs.opengroup.org/onlinepubs/009696799/functions/tcsetattr.html) によると、errno 5 は次のようです。
+[tcsetattr の説明](https://pubs.opengroup.org/onlinepubs/009696799/functions/tcsetattr.html) によると、errno 5 は次のようです。
 > *The process group of the writing process is orphaned, and the writing process is not ignoring or blocking SIGTTOU.*
 
 そこで、次のように gpg-agent を起動してみると、`tcsetattr() @ tty/pinentry-tty.c#61` は通過しますが、その後 `fgetc () @ tty/pinentry-tty.c#339` が errno 5(EIO) で失敗します。
@@ -89,3 +90,10 @@ SIGTTIN を無視すると動作する理由は分かりません。[fgetc の�
 <sub>(*1) どのバージョンからかは分かりませんが、入手時 最新の 1.2.1 は日本語もきれいに納まってレイアウトされます！</sub>
 
 <sub>(*2) 敢えて、SIGTTOU と SIGTTIN を無視するパッチを作るならば、pinentry ではなく、gpg-agent を変更する方が pinentry-tty と pinentry-curse それぞれにパッチ当てずに済みますので良いかもしれません（GnuPG のソースパッケージ中の agent/gpg-agent.c 見ると、`main() @ agent/gpg-agent.c#1766` 辺りで SIGPIPE に対して SIG_IGN を設定していますので、そこで SIGTTOU と SIGTTIN を SIG_IGN に設定すると良さそうです。ここは gpg-agent に対する要求処理に入って行く手前のようです）。</sub>
+
+## cygwin 3.5.0-0.150.g4b157b44cad0(Test) を使ってみる
+SIGTTOU, SIGTTIN の trap で動作する事をソース上で追ってみると、`fhandler_termios::bg_check() @ winsup/cygwin/fhandler/termios.cc#204` に興味が出てきました。そこで FAQ 6.21 に従って cygwin を make し確認（トレース）しようとすると、trap 無しで pinentry-{tty,curses} が動作しました。
+
+試しに cygwin 3.5.0-0.150.g4b157b44cad0(Test) を使ってみると、こちらも trap 無しで動作します。
+
+どうやら、3.5 バージョンでは pinentry-{tty,curses} が動作するようです。pinentry パッケージも併せて更新されることを期待しています。
